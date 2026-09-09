@@ -1,14 +1,15 @@
-# NKB1176
+# NKB FET
 
-1176-style FET Compressor Audio Plugin developed with C++ and JUCE framework.
+FET-style Compressor Audio Plugin developed with C++ and JUCE framework.
 
 ## Overview
-**NKB1176** is an FET-style compressor plugin inspired by the response and sound character of the classic UREI 1176. It features ultra-fast attack/release times and a distinct, punchy analog distortion character.
+**NKB FET** is an FET-style compressor plugin inspired by the fast response and sound character of the classic UREI 1176. It features ultra-fast attack/release times, a distinct punchy analog character, and a modern, high-precision digital Gain Reduction display.
 
 ## Features
 - **FET Compressor Emulation**: Ultra-fast attack time and dynamic response.
+- **Modern Digital GR Display**: High-visibility digital Gain Reduction meter and dynamic response bar.
 - **JUCE Framework**: Lightweight and cross-platform audio processing in C++.
-- **Simple Controls**: Intuitive parameters for quick tone shaping.
+- **Simple & Intuitive Controls**: Streamlined parameters for precise and fast tone shaping.
 
 ## Requirements & Environment
 - **Framework**: JUCE (v7 / v8)
@@ -17,12 +18,12 @@
 
 ## Project Structure
 - `Source/` : C++ source code (Processor, Editor)
-- `NKB1176.jucer` : Projucer project file
+- `NKBFET.jucer` : Projucer project file
 - `README.md` : Documentation
 
 ## How to Build
 1. Install [JUCE](https://juce.com/).
-2. Open `NKB1176.jucer` using Projucer.
+2. Open `NKBFET.jucer` using Projucer.
 3. Select your IDE exporter (e.g., Visual Studio / Xcode), open the project, and build.
 
 ## License
