@@ -2,11 +2,11 @@
 
 #include <JuceHeader.h>
 
-class NKB1176AudioProcessor  : public juce::AudioProcessor
+class NKBFETAudioProcessor  : public juce::AudioProcessor
 {
 public:
-    NKB1176AudioProcessor();
-    ~NKB1176AudioProcessor() override;
+    NKBFETAudioProcessor();
+    ~NKBFETAudioProcessor() override;
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
@@ -41,5 +41,5 @@ private:
     float envelopeState = 0.0f;
     std::atomic<float> currentGainReductionDb { 0.0f };
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NKB1176AudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NKBFETAudioProcessor)
 };

@@ -1,7 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-NKB1176AudioProcessorEditor::NKB1176AudioProcessorEditor (NKB1176AudioProcessor& p)
+NKBFETAudioProcessorEditor::NKBFETAudioProcessorEditor (NKBFETAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
     setSize (720, 230);
@@ -28,12 +28,7 @@ NKB1176AudioProcessorEditor::NKB1176AudioProcessorEditor (NKB1176AudioProcessor&
     setupKnob(outputSlider, outputLabel, "OUTPUT");
     setupKnob(attackSlider, attackLabel, "ATTACK");
     setupKnob(releaseSlider, releaseLabel, "RELEASE");
-
-    ratioBox.addItemList(juce::StringArray { "4", "8", "12", "20", "ALL" }, 1);
-    ratioBox.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xff180a20));
-    ratioBox.setColour(juce::ComboBox::textColourId, juce::Colours::whitesmoke);
-    ratioBox.setColour(juce::ComboBox::outlineColourId, juce::Colour(0xff552266));
-    addAndMakeVisible(ratioBox);
+    setupKnob(driveSlider, driveLabel, "DRIVE");
 
     ratioLabel.setText("RATIO", juce::dontSendNotification);
     ratioLabel.setJustificationType(juce::Justification::centred);
@@ -41,33 +36,65 @@ NKB1176AudioProcessorEditor::NKB1176AudioProcessorEditor (NKB1176AudioProcessor&
     ratioLabel.setColour(juce::Label::textColourId, juce::Colours::whitesmoke);
     addAndMakeVisible(ratioLabel);
 
+    for (size_t i = 0; i < ratioButtons.size(); ++i)
+    {
+        auto& btn = ratioButtons[i];
+        btn.setLookAndFeel (&squareButtonLaf);
+        btn.setButtonText("");
+        btn.setRadioGroupId(1001);
+        btn.setClickingTogglesState(true);
+
+        btn.onClick = [this, i]() {
+            if (auto* param = audioProcessor.apvts.getParameter("RATIO"))
+            {
+                param->beginChangeGesture();
+                param->setValueNotifyingHost(static_cast<float>(i) / 4.0f);
+                param->endChangeGesture();
+            }
+        };
+
+        addAndMakeVisible(btn);
+    }
+
     inputAttach   = std::make_unique<Attachment>(audioProcessor.apvts, "INPUT",   inputSlider);
     outputAttach  = std::make_unique<Attachment>(audioProcessor.apvts, "OUTPUT",  outputSlider);
     attackAttach  = std::make_unique<Attachment>(audioProcessor.apvts, "ATTACK",  attackSlider);
     releaseAttach = std::make_unique<Attachment>(audioProcessor.apvts, "RELEASE", releaseSlider);
-    ratioAttach   = std::make_unique<ComboBoxAttachment>(audioProcessor.apvts, "RATIO", ratioBox);
+    driveAttach   = std::make_unique<Attachment>(audioProcessor.apvts, "DRIVE",   driveSlider);
 
+    updateRatioButtonsFromParam();
     startTimerHz(30);
 }
 
-NKB1176AudioProcessorEditor::~NKB1176AudioProcessorEditor()
+NKBFETAudioProcessorEditor::~NKBFETAudioProcessorEditor()
 {
     stopTimer();
+    for (auto& btn : ratioButtons)
+        btn.setLookAndFeel (nullptr);
 }
 
-void NKB1176AudioProcessorEditor::timerCallback()
+void NKBFETAudioProcessorEditor::updateRatioButtonsFromParam()
+{
+    int ratioIdx = static_cast<int>(audioProcessor.apvts.getRawParameterValue("RATIO")->load());
+    ratioIdx = juce::jlimit(0, 4, ratioIdx);
+    ratioButtons[static_cast<size_t>(ratioIdx)].setToggleState(true, juce::dontSendNotification);
+}
+
+void NKBFETAudioProcessorEditor::timerCallback()
 {
     float targetGr = audioProcessor.getGainReductionDb();
     displayedGrDb = displayedGrDb * 0.6f + targetGr * 0.4f;
+
+    updateRatioButtonsFromParam();
     repaint();
 }
 
-void NKB1176AudioProcessorEditor::paint (juce::Graphics& g)
+void NKBFETAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // 1. 紫ベースのパネル背景
     juce::Colour purpleTop (0xff6b2680);
     juce::Colour purpleBottom (0xff421552);
-    g.setGradientFill (juce::ColourGradient (purpleTop, 0, 0, purpleBottom, 0, (float) getHeight(), false));
+    g.setGradientFill (juce::ColourGradient (purpleTop, 0.0f, 0.0f, purpleBottom, 0.0f, static_cast<float>(getHeight()), false));
     g.fillAll();
 
     // 左右シャーシ＆ビス
@@ -76,18 +103,17 @@ void NKB1176AudioProcessorEditor::paint (juce::Graphics& g)
     g.fillRect (getWidth() - 18, 0, 18, getHeight());
 
     g.setColour (juce::Colour(0xff222222));
-    g.fillEllipse (5, 18, 8, 8);
-    g.fillEllipse (5, getHeight() - 26, 8, 8);
-    g.fillEllipse (getWidth() - 13, 18, 8, 8);
-    g.fillEllipse (getWidth() - 13, getHeight() - 26, 8, 8);
+    g.fillEllipse (5.0f, 18.0f, 8.0f, 8.0f);
+    g.fillEllipse (5.0f, static_cast<float>(getHeight() - 26), 8.0f, 8.0f);
+    g.fillEllipse (static_cast<float>(getWidth() - 13), 18.0f, 8.0f, 8.0f);
+    g.fillEllipse (static_cast<float>(getWidth() - 13), static_cast<float>(getHeight() - 26), 8.0f, 8.0f);
 
     // 2. タイトルロゴ
-// 2. タイトルロゴ
-g.setColour (juce::Colours::whitesmoke);
-g.setFont (juce::FontOptions(15.0f, juce::Font::bold));
-g.drawText ("NKB FET", 25, 8, 120, 18, juce::Justification::left, true); // "NKB 1176" から変更
-g.setFont (juce::FontOptions(9.0f, juce::Font::plain));
-g.drawText ("LIMITING AMPLIFIER", 25, 24, 120, 12, juce::Justification::left, true);
+    g.setColour (juce::Colours::whitesmoke);
+    g.setFont (juce::FontOptions(15.0f, juce::Font::bold));
+    g.drawText ("NKB FET", 25, 8, 120, 18, juce::Justification::left, true);
+    g.setFont (juce::FontOptions(9.0f, juce::Font::plain));
+    g.drawText ("LIMITING AMPLIFIER", 25, 24, 120, 12, juce::Justification::left, true);
 
     // 3. アナログ風ノブ描画
     auto drawAnalogKnob = [&g](juce::Slider& slider, bool isLarge) {
@@ -122,7 +148,7 @@ g.drawText ("LIMITING AMPLIFIER", 25, 24, 120, 12, juce::Justification::left, tr
         double sliderPos = slider.getValue();
         double minVal = slider.getMinimum();
         double maxVal = slider.getMaximum();
-        float angle = juce::jmap ((float)sliderPos, (float)minVal, (float)maxVal, -2.2f, 2.2f);
+        float angle = juce::jmap (static_cast<float>(sliderPos), static_cast<float>(minVal), static_cast<float>(maxVal), -2.2f, 2.2f);
 
         juce::Point<float> pointerStart (cx + capRadius * std::sin(angle), cy - capRadius * std::cos(angle));
         juce::Point<float> pointerEnd (cx + (bodyRadius - 2.0f) * std::sin(angle), cy - (bodyRadius - 2.0f) * std::cos(angle));
@@ -135,33 +161,44 @@ g.drawText ("LIMITING AMPLIFIER", 25, 24, 120, 12, juce::Justification::left, tr
     drawAnalogKnob(outputSlider, true);
     drawAnalogKnob(attackSlider, false);
     drawAnalogKnob(releaseSlider, false);
+    drawAnalogKnob(driveSlider, false);
 
-    // 4. デジタルGRインジケーター（ラック機材風パネル）
-    auto displayArea = juce::Rectangle<int>(getWidth() - 175, 42, 145, 115);
+    // 4. MC77風 RATIOの左側シルク印刷テキスト
+    g.setColour (juce::Colours::whitesmoke);
+    g.setFont (juce::FontOptions(10.0f, juce::Font::bold));
+
+    const juce::StringArray ratioTextLabels { "4", "8", "12", "20", "ALL" };
+    int buttonX = 450;
+    int btnH = 24;
+    int btnStartY = 42 + 18;
+
+    for (size_t i = 0; i < ratioButtons.size(); ++i)
+    {
+        int textY = btnStartY + static_cast<int>(i) * btnH;
+        g.drawText (ratioTextLabels[static_cast<int>(i)], buttonX - 32, textY, 26, btnH, juce::Justification::right, false);
+    }
+
+    // 5. デジタルGRインジケーター（Y=56）
+    auto displayArea = juce::Rectangle<int>(getWidth() - 190, 56, 160, 110);
     
-    // 黒基調の背景と枠線
     g.setColour (juce::Colour(0xff121212));
     g.fillRect (displayArea);
     g.setColour (juce::Colour(0xff442255));
     g.drawRect (displayArea, 2.0f);
 
-    // パネルヘッダー
     g.setColour (juce::Colour(0xff888888));
     g.setFont (juce::FontOptions(10.0f, juce::Font::bold));
-    g.drawText ("GAIN REDUCTION", displayArea.getX(), displayArea.getY() + 8, displayArea.getWidth(), 14, juce::Justification::centred, true);
+    g.drawText ("GAIN REDUCTION", displayArea.getX(), displayArea.getY() + 6, displayArea.getWidth(), 14, juce::Justification::centred, true);
 
-    // デジタル数値（大文字オレンジ）
     g.setColour (juce::Colour(0xffffa500));
     g.setFont (juce::FontOptions(22.0f, juce::Font::bold));
     juce::String grText = "-" + juce::String(displayedGrDb, 1) + " dB";
-    g.drawText (grText, displayArea.getX(), displayArea.getY() + 28, displayArea.getWidth(), 30, juce::Justification::centred, true);
+    g.drawText (grText, displayArea.getX(), displayArea.getY() + 24, displayArea.getWidth(), 30, juce::Justification::centred, true);
 
-    // 横型プログレスバー背景
-    auto barArea = juce::Rectangle<float>((float)displayArea.getX() + 12.0f, (float)displayArea.getY() + 68.0f, (float)displayArea.getWidth() - 24.0f, 12.0f);
+    auto barArea = juce::Rectangle<float>(static_cast<float>(displayArea.getX()) + 12.0f, static_cast<float>(displayArea.getY()) + 60.0f, static_cast<float>(displayArea.getWidth()) - 24.0f, 12.0f);
     g.setColour (juce::Colour(0xff222222));
     g.fillRect (barArea);
 
-    // GR量に応じて伸びるオレンジ/赤のバー
     float maxGrDisplay = 20.0f;
     float normGr = juce::jlimit(0.0f, 1.0f, displayedGrDb / maxGrDisplay);
     float fillWidth = barArea.getWidth() * normGr;
@@ -173,32 +210,14 @@ g.drawText ("LIMITING AMPLIFIER", 25, 24, 120, 12, juce::Justification::left, tr
         g.fillRect (fillRect);
     }
 
-    // バーの目盛り（0, 10, 20）
     g.setColour (juce::Colour(0xff777777));
     g.setFont (juce::FontOptions(9.0f, juce::Font::plain));
-    g.drawText ("0", (int)barArea.getX() - 5, (int)barArea.getBottom() + 2, 20, 12, juce::Justification::left, false);
-    g.drawText ("10", (int)barArea.getCentreX() - 10, (int)barArea.getBottom() + 2, 20, 12, juce::Justification::centred, false);
-    g.drawText ("20", (int)barArea.getRight() - 15, (int)barArea.getBottom() + 2, 20, 12, juce::Justification::right, false);
+    g.drawText ("0", static_cast<int>(barArea.getX()) - 5, static_cast<int>(barArea.getBottom()) + 2, 20, 12, juce::Justification::left, false);
+    g.drawText ("10", static_cast<int>(barArea.getCentreX()) - 10, static_cast<int>(barArea.getBottom()) + 2, 20, 12, juce::Justification::centred, false);
+    g.drawText ("20", static_cast<int>(barArea.getRight()) - 15, static_cast<int>(barArea.getBottom()) + 2, 20, 12, juce::Justification::right, false);
 }
 
-void NKB1176AudioProcessorEditor::resized()
+void NKBFETAudioProcessorEditor::resized()
 {
-    int startY = 42;
-
-    inputLabel.setBounds(30, startY, 95, 16);
-    inputSlider.setBounds(30, startY + 16, 95, 125);
-
-    outputLabel.setBounds(150, startY, 95, 16);
-    outputSlider.setBounds(150, startY + 16, 95, 125);
-
-    int midX = 285;
-    attackLabel.setBounds(midX, startY, 70, 16);
-    attackSlider.setBounds(midX, startY + 16, 70, 68);
-
-    releaseLabel.setBounds(midX, startY + 86, 70, 16);
-    releaseSlider.setBounds(midX, startY + 102, 70, 68);
-
-    int ratioX = 390;
-    ratioLabel.setBounds(ratioX, startY + 40, 55, 18);
-    ratioBox.setBounds(ratioX, startY + 62, 55, 24);
+    PluginLayout::applyLayout(*this);
 }

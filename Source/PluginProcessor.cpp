@@ -1,7 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-NKB1176AudioProcessor::NKB1176AudioProcessor()
+NKBFETAudioProcessor::NKBFETAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
@@ -16,41 +16,42 @@ NKB1176AudioProcessor::NKB1176AudioProcessor()
 {
 }
 
-NKB1176AudioProcessor::~NKB1176AudioProcessor() {}
+NKBFETAudioProcessor::~NKBFETAudioProcessor() {}
 
-juce::AudioProcessorValueTreeState::ParameterLayout NKB1176AudioProcessor::createParameterLayout()
+juce::AudioProcessorValueTreeState::ParameterLayout NKBFETAudioProcessor::createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>("INPUT",   "Input Gain", -20.0f, 20.0f, 0.0f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>("OUTPUT",  "Output Gain", -20.0f, 20.0f, 0.0f));
-    params.push_back(std::make_unique<juce::AudioParameterChoice>("RATIO",   "Ratio", juce::StringArray { "4:1", "8:1", "12:1", "20:1", "ALL" }, 0));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("DRIVE",   "Drive", 0.0f, 24.0f, 0.0f));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>("RATIO",   "Ratio", juce::StringArray { "4", "8", "12", "20", "ALL" }, 0));
     params.push_back(std::make_unique<juce::AudioParameterFloat>("ATTACK",  "Attack (Fast<-Slow)", 1.0f, 7.0f, 4.0f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>("RELEASE", "Release (Fast<-Slow)", 1.0f, 7.0f, 4.0f));
 
     return { params.begin(), params.end() };
 }
 
-const juce::String NKB1176AudioProcessor::getName() const { return JucePlugin_Name; }
-bool NKB1176AudioProcessor::acceptsMidi() const { return false; }
-bool NKB1176AudioProcessor::producesMidi() const { return false; }
-bool NKB1176AudioProcessor::isMidiEffect() const { return false; }
-double NKB1176AudioProcessor::getTailLengthSeconds() const { return 0.0; }
-int NKB1176AudioProcessor::getNumPrograms() { return 1; }
-int NKB1176AudioProcessor::getCurrentProgram() { return 0; }
-void NKB1176AudioProcessor::setCurrentProgram (int index) {}
-const juce::String NKB1176AudioProcessor::getProgramName (int index) { return {}; }
-void NKB1176AudioProcessor::changeProgramName (int index, const juce::String& newName) {}
+const juce::String NKBFETAudioProcessor::getName() const { return JucePlugin_Name; }
+bool NKBFETAudioProcessor::acceptsMidi() const { return false; }
+bool NKBFETAudioProcessor::producesMidi() const { return false; }
+bool NKBFETAudioProcessor::isMidiEffect() const { return false; }
+double NKBFETAudioProcessor::getTailLengthSeconds() const { return 0.0; }
+int NKBFETAudioProcessor::getNumPrograms() { return 1; }
+int NKBFETAudioProcessor::getCurrentProgram() { return 0; }
+void NKBFETAudioProcessor::setCurrentProgram (int index) {}
+const juce::String NKBFETAudioProcessor::getProgramName (int index) { return {}; }
+void NKBFETAudioProcessor::changeProgramName (int index, const juce::String& newName) {}
 
-void NKB1176AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void NKBFETAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     envelopeState = 0.0f;
     currentGainReductionDb.store(0.0f);
 }
 
-void NKB1176AudioProcessor::releaseResources() {}
+void NKBFETAudioProcessor::releaseResources() {}
 
-bool NKB1176AudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool NKBFETAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
      && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
@@ -58,7 +59,7 @@ bool NKB1176AudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) 
     return true;
 }
 
-void NKB1176AudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void NKBFETAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -69,12 +70,15 @@ void NKB1176AudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 
     float inputDb   = apvts.getRawParameterValue("INPUT")->load();
     float outputDb  = apvts.getRawParameterValue("OUTPUT")->load();
+    float drivedB   = apvts.getRawParameterValue("DRIVE")->load();
     int   ratioIdx  = static_cast<int>(apvts.getRawParameterValue("RATIO")->load());
     float attackVal = apvts.getRawParameterValue("ATTACK")->load();
     float relVal    = apvts.getRawParameterValue("RELEASE")->load();
 
     float inputLinear  = juce::Decibels::decibelsToGain(inputDb);
     float outputLinear = juce::Decibels::decibelsToGain(outputDb);
+    float driveGain    = juce::Decibels::decibelsToGain(drivedB);
+    float driveCompensate = 1.0f / (1.0f + drivedB * 0.04f);
 
     float ratio = 4.0f;
     bool isAllButtons = false;
@@ -138,7 +142,8 @@ void NKB1176AudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
             float* channelData = buffer.getWritePointer(ch);
             float compressed = channelData[i] * gainGain;
             
-            float saturated = std::tanh(compressed * 1.1f);
+            float driven = compressed * driveGain;
+            float saturated = std::tanh(driven * 1.1f) * driveCompensate;
 
             channelData[i] = saturated * outputLinear;
         }
@@ -147,16 +152,16 @@ void NKB1176AudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     currentGainReductionDb.store(maxGrThisBlock);
 }
 
-bool NKB1176AudioProcessor::hasEditor() const { return true; }
-juce::AudioProcessorEditor* NKB1176AudioProcessor::createEditor()
+bool NKBFETAudioProcessor::hasEditor() const { return true; }
+juce::AudioProcessorEditor* NKBFETAudioProcessor::createEditor()
 {
-    return new NKB1176AudioProcessorEditor (*this);
+    return new NKBFETAudioProcessorEditor (*this);
 }
 
-void NKB1176AudioProcessor::getStateInformation (juce::MemoryBlock& destData) {}
-void NKB1176AudioProcessor::setStateInformation (const void* data, int sizeInBytes) {}
+void NKBFETAudioProcessor::getStateInformation (juce::MemoryBlock& destData) {}
+void NKBFETAudioProcessor::setStateInformation (const void* data, int sizeInBytes) {}
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new NKB1176AudioProcessor();
+    return new NKBFETAudioProcessor();
 }
