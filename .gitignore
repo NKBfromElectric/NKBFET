@@ -1,0 +1,24 @@
+# JUCE Build directories
+/Builds/
+/JuceLibraryCode/
+
+# Visual Studio / C++ Temporary files
+*.user
+*.suo
+*.opensdf
+*.sdf
+*.cache
+*.VC.db
+*.VC.opendb
+.vs/
+x64/
+Debug/
+Release/
+
+# Compiled plugin binaries
+*.vst3
+*.component
+*.exe
+*.dll
+*.lib
+*.exp
