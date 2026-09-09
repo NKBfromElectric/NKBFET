@@ -21,3 +21,11 @@
 ├── Source/              # C++ ソースコード (Processor, Editor)
 ├── NKB1176.jucer        # Projucer プロジェクトファイル
 └── README.md            # ドキュメント
+
+## How to Build
+1. [JUCE](https://juce.com/) をインストールします。
+2. `NKB1176.jucer` を Projucer で開きます。
+3. お使いのIDE（Visual Studio / Xcode など）のエクスポート設定を選択し、プロジェクトを開いてビルドを実行します。
+
+## License
+This project is open-source. Feel free to use and inspect the code for educational and development purposes.
