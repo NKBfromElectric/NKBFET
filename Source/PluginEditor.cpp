@@ -82,11 +82,12 @@ void NKB1176AudioProcessorEditor::paint (juce::Graphics& g)
     g.fillEllipse (getWidth() - 13, getHeight() - 26, 8, 8);
 
     // 2. タイトルロゴ
-    g.setColour (juce::Colours::whitesmoke);
-    g.setFont (juce::FontOptions(15.0f, juce::Font::bold));
-    g.drawText ("NKB 1176", 25, 8, 120, 18, juce::Justification::left, true);
-    g.setFont (juce::FontOptions(9.0f, juce::Font::plain));
-    g.drawText ("LIMITING AMPLIFIER", 25, 24, 120, 12, juce::Justification::left, true);
+// 2. タイトルロゴ
+g.setColour (juce::Colours::whitesmoke);
+g.setFont (juce::FontOptions(15.0f, juce::Font::bold));
+g.drawText ("NKB FET", 25, 8, 120, 18, juce::Justification::left, true); // "NKB 1176" から変更
+g.setFont (juce::FontOptions(9.0f, juce::Font::plain));
+g.drawText ("LIMITING AMPLIFIER", 25, 24, 120, 12, juce::Justification::left, true);
 
     // 3. アナログ風ノブ描画
     auto drawAnalogKnob = [&g](juce::Slider& slider, bool isLarge) {
