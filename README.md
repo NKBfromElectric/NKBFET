@@ -3,12 +3,12 @@
 1176-style FET Compressor Audio Plugin developed with C++ and JUCE framework.
 
 ## Overview
-**NKB1176** は、名機 UREI 1176 の挙動やサウンド特性に着想を得て制作されたFETスタイルのコンプレッサー・プラグインです。高速なアタック/リリースタイムと、特有の押し出し感のあるディストーション・キャラクターを特徴としています。
+**NKB1176** is an FET-style compressor plugin inspired by the response and sound character of the classic UREI 1176. It features ultra-fast attack/release times and a distinct, punchy analog distortion character.
 
 ## Features
-- **FET Compressor Emulation**: 高速なアタックとダイナミックなレスポンス
-- **JUCE Framework**: C++ / JUCE による軽量かつクロスプラットフォームなオーディオ処理
-- **Simple Controls**: 直感的な操作が可能なパラメーター設計
+- **FET Compressor Emulation**: Ultra-fast attack time and dynamic response.
+- **JUCE Framework**: Lightweight and cross-platform audio processing in C++.
+- **Simple Controls**: Intuitive parameters for quick tone shaping.
 
 ## Requirements & Environment
 - **Framework**: JUCE (v7 / v8)
@@ -16,16 +16,14 @@
 - **Supported Formats**: VST3 / AU / Standalone
 
 ## Project Structure
-```text
-.
-├── Source/              # C++ ソースコード (Processor, Editor)
-├── NKB1176.jucer        # Projucer プロジェクトファイル
-└── README.md            # ドキュメント
+- `Source/` : C++ source code (Processor, Editor)
+- `NKB1176.jucer` : Projucer project file
+- `README.md` : Documentation
 
 ## How to Build
-1. [JUCE](https://juce.com/) をインストールします。
-2. `NKB1176.jucer` を Projucer で開きます。
-3. お使いのIDE（Visual Studio / Xcode など）のエクスポート設定を選択し、プロジェクトを開いてビルドを実行します。
+1. Install [JUCE](https://juce.com/).
+2. Open `NKB1176.jucer` using Projucer.
+3. Select your IDE exporter (e.g., Visual Studio / Xcode), open the project, and build.
 
 ## License
 This project is open-source. Feel free to use and inspect the code for educational and development purposes.
