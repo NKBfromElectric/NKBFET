@@ -81,7 +81,7 @@ void NKB1176AudioProcessorEditor::paint (juce::Graphics& g)
     g.fillEllipse (getWidth() - 13, 18, 8, 8);
     g.fillEllipse (getWidth() - 13, getHeight() - 26, 8, 8);
 
-    // 2. タイトルロゴ（被り防止のため上部かつ少し左寄りに調整）
+    // 2. タイトルロゴ
     g.setColour (juce::Colours::whitesmoke);
     g.setFont (juce::FontOptions(15.0f, juce::Font::bold));
     g.drawText ("NKB 1176", 25, 8, 120, 18, juce::Justification::left, true);
@@ -135,46 +135,53 @@ void NKB1176AudioProcessorEditor::paint (juce::Graphics& g)
     drawAnalogKnob(attackSlider, false);
     drawAnalogKnob(releaseSlider, false);
 
-    // 4. アナログVUメーター
-    auto vuArea = juce::Rectangle<int>(getWidth() - 175, 30, 145, 95);
+    // 4. デジタルGRインジケーター（ラック機材風パネル）
+    auto displayArea = juce::Rectangle<int>(getWidth() - 175, 42, 145, 115);
     
-    g.setColour (juce::Colour(0xff0d0d0d));
-    g.fillRect (vuArea.expanded(3));
+    // 黒基調の背景と枠線
+    g.setColour (juce::Colour(0xff121212));
+    g.fillRect (displayArea);
+    g.setColour (juce::Colour(0xff442255));
+    g.drawRect (displayArea, 2.0f);
 
-    juce::Colour vuLight (0xffffe082);
-    juce::Colour vuDark (0xffd7ccc8);
-    g.setGradientFill (juce::ColourGradient (vuLight, (float)vuArea.getX(), (float)vuArea.getY(),
-                                             vuDark, (float)vuArea.getX(), (float)vuArea.getBottom(), false));
-    g.fillRect (vuArea);
+    // パネルヘッダー
+    g.setColour (juce::Colour(0xff888888));
+    g.setFont (juce::FontOptions(10.0f, juce::Font::bold));
+    g.drawText ("GAIN REDUCTION", displayArea.getX(), displayArea.getY() + 8, displayArea.getWidth(), 14, juce::Justification::centred, true);
 
-    g.setColour (juce::Colour(0xff212121));
-    g.setFont (juce::FontOptions(12.0f, juce::Font::bold));
-    g.drawText ("VU", vuArea.removeFromTop(20), juce::Justification::centred, true);
-    g.setFont (juce::FontOptions(9.0f, juce::Font::plain));
-    g.drawText ("-20 -10 -7 -5 -3 -1 0 +1 +3", vuArea.removeFromTop(15), juce::Justification::centred, true);
+    // デジタル数値（大文字オレンジ）
+    g.setColour (juce::Colour(0xffffa500));
+    g.setFont (juce::FontOptions(22.0f, juce::Font::bold));
+    juce::String grText = "-" + juce::String(displayedGrDb, 1) + " dB";
+    g.drawText (grText, displayArea.getX(), displayArea.getY() + 28, displayArea.getWidth(), 30, juce::Justification::centred, true);
 
+    // 横型プログレスバー背景
+    auto barArea = juce::Rectangle<float>((float)displayArea.getX() + 12.0f, (float)displayArea.getY() + 68.0f, (float)displayArea.getWidth() - 24.0f, 12.0f);
+    g.setColour (juce::Colour(0xff222222));
+    g.fillRect (barArea);
+
+    // GR量に応じて伸びるオレンジ/赤のバー
     float maxGrDisplay = 20.0f;
     float normGr = juce::jlimit(0.0f, 1.0f, displayedGrDb / maxGrDisplay);
-    float angle = juce::jmap(normGr, 0.0f, 1.0f, 0.45f, -0.45f); 
+    float fillWidth = barArea.getWidth() * normGr;
 
-    juce::Point<float> pivot ((float)(getWidth() - 102), 145.0f);
-    float needleLength = 65.0f;
-    juce::Point<float> needleEnd (pivot.x + needleLength * std::sin(angle), pivot.y - needleLength * std::cos(angle));
+    if (fillWidth > 0.0f)
+    {
+        auto fillRect = juce::Rectangle<float>(barArea.getX(), barArea.getY(), fillWidth, barArea.getHeight());
+        g.setColour (juce::Colour(0xffff5500));
+        g.fillRect (fillRect);
+    }
 
-    g.setColour (juce::Colour(0xffd50000));
-    g.drawLine (juce::Line<float>(pivot, needleEnd), 2.0f);
-
-    auto grTextRect = juce::Rectangle<int>(getWidth() - 175, 135, 145, 22);
-    g.setColour (juce::Colour(0xff0d0d0d));
-    g.fillRect (grTextRect);
-    g.setColour (juce::Colour(0xffffa500));
-    g.setFont (juce::FontOptions(11.0f, juce::Font::bold));
-    g.drawText ("GR: -" + juce::String(displayedGrDb, 1) + " dB", grTextRect, juce::Justification::centred, true);
+    // バーの目盛り（0, 10, 20）
+    g.setColour (juce::Colour(0xff777777));
+    g.setFont (juce::FontOptions(9.0f, juce::Font::plain));
+    g.drawText ("0", (int)barArea.getX() - 5, (int)barArea.getBottom() + 2, 20, 12, juce::Justification::left, false);
+    g.drawText ("10", (int)barArea.getCentreX() - 10, (int)barArea.getBottom() + 2, 20, 12, juce::Justification::centred, false);
+    g.drawText ("20", (int)barArea.getRight() - 15, (int)barArea.getBottom() + 2, 20, 12, juce::Justification::right, false);
 }
 
 void NKB1176AudioProcessorEditor::resized()
 {
-    // ロゴとぶつからないようY開始位置を42pxに下げて配置
     int startY = 42;
 
     inputLabel.setBounds(30, startY, 95, 16);
